@@ -1,9 +1,44 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  return (
+    <div
+      className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 transform ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      } transition-transform duration-300 ease-in-out`}
+    >
+      <div className="p-4">
+        <Button onClick={onClose} className="mb-4">
+          Close
+        </Button>
+        <nav className="space-y-4">
+          <Link href="/audio-adder" className="block">
+            Audio Adder
+          </Link>
+          <Link href="/joiner" className="block">
+            Joiner
+          </Link>
+          <Link href="/recorder" className="block">
+            Recorder
+          </Link>
+          <Link href="/audio-remover" className="block">
+            Audio Remover
+          </Link>
+        </nav>
+      </div>
+    </div>
+  );
+};
 
 const Navbar = () => {
   return (
