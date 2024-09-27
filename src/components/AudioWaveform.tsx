@@ -1,21 +1,23 @@
-"use client"
-import React, { useState, useEffect, useRef } from 'react';
-import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js'
-import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js'
-import ZoomPlugin from 'wavesurfer.js/dist/plugins/zoom.esm.js'
-import { useFileContext } from "@/contexts/fileContext"
-import WaveSurfer from 'wavesurfer.js';
-import { Button } from './ui/button';
-import { FaPlay } from "react-icons/fa";
-import { FaPause } from "react-icons/fa";
+"use client";
+import React, { useState, useEffect, useRef } from "react";
+import TimelinePlugin from "wavesurfer.js/dist/plugins/timeline.esm.js";
+import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
+import ZoomPlugin from "wavesurfer.js/dist/plugins/zoom.esm.js";
+import { useFileContext } from "@/contexts/fileContext";
+import WaveSurfer from "wavesurfer.js";
+import { Button } from "./ui/button";
+import {
+  FaPlay,
+  FaPause,
+  FaCut,
+  FaVolumeUp,
+  FaVolumeDown,
+} from "react-icons/fa";
 import { MdOutlineReplay } from "react-icons/md";
-import { FaCut } from "react-icons/fa";
-import { Slider } from './ui/slider';
-import { FaVolumeUp, FaVolumeDown } from "react-icons/fa";
-import { useRouter } from 'next/navigation';
+import { Slider } from "./ui/slider";
+import { useRouter } from "next/navigation";
 
 const AudioWaveform: React.FC = () => {
-
   const router = useRouter();
 
   const wavesurferRef = useRef<HTMLDivElement>(null);
@@ -32,21 +34,32 @@ const AudioWaveform: React.FC = () => {
   let wsRegions: any;
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && wavesurferRef.current && !wavesurferObj) {
+    if (
+      typeof window !== "undefined" &&
+      wavesurferRef.current &&
+      !wavesurferObj
+    ) {
       const WaveSurferInstance = WaveSurfer.create({
         container: wavesurferRef.current,
-        backend: 'MediaElement',
+        backend: "MediaElement",
         autoCenter: true,
         cursorColor: "white",
         waveColor: "#00FF8E",
         progressColor: "#144735",
+        height: 100, // Set a specific height for the waveform
         plugins: [
-          // RegionsPlugin.create({}),
           TimelinePlugin.create({
             container: timelineRef.current!,
+            notchPercentHeight: 100,
+            labelPadding: 5,
+            unlabeledNotchColor: "#00FF8E",
+            primaryLabelColor: "#00FF8E",
+            secondaryLabelColor: "#00FF8E",
+            primaryFontColor: "#00FF8E",
+            secondaryFontColor: "#00FF8E",
           }),
           ZoomPlugin.create(),
-        ]
+        ],
       });
 
       setWavesurferObj(WaveSurferInstance);
@@ -59,28 +72,26 @@ const AudioWaveform: React.FC = () => {
     }
 
     if (!fileURL) {
-      router.push('/');
+      router.push("/");
     }
   }, [fileURL, wavesurferObj]);
 
   useEffect(() => {
     if (wavesurferObj) {
-      wavesurferObj.on('ready', () => {
+      wavesurferObj.on("ready", () => {
         wavesurferObj.play();
-        // wavesurferObj.enableDragSelection({});
-
         setDuration(Math.floor(wavesurferObj.getDuration()));
       });
 
-      wavesurferObj.on('play', () => {
+      wavesurferObj.on("play", () => {
         setPlaying(true);
       });
 
-      wavesurferObj.on('finish', () => {
+      wavesurferObj.on("finish", () => {
         setPlaying(false);
       });
 
-      wavesurferObj.on('region-updated', (region: any) => {
+      wavesurferObj.on("region-updated", (region: any) => {
         const regions = region.wavesurfer.regions.list;
         const keys = Object.keys(regions);
         if (keys.length > 1) {
@@ -100,10 +111,11 @@ const AudioWaveform: React.FC = () => {
     }
   }, [zoom, wavesurferObj]);
 
-
   useEffect(() => {
     if (duration && wavesurferObj) {
-      const regionsPlugin = wavesurferObj.registerPlugin(RegionsPlugin.create());
+      const regionsPlugin = wavesurferObj.registerPlugin(
+        RegionsPlugin.create()
+      );
       setRegionsPlugin(regionsPlugin);
       regionsPlugin.addRegion({
         start: Math.floor(duration / 2) - Math.floor(duration) / 5,
@@ -111,7 +123,7 @@ const AudioWaveform: React.FC = () => {
         color: "hsla(265, 100%, 86%, 0.4)",
       });
 
-      console.log("REGION OBJECT: ", regionsPlugin)
+      console.log("REGION OBJECT: ", regionsPlugin);
     }
   }, [duration, wavesurferObj]);
 
@@ -134,12 +146,6 @@ const AudioWaveform: React.FC = () => {
     setVolume(value[0]);
   };
 
-  // const handleZoomSlider = (value: number[]) => {
-  //   setZoom(value[0]);
-  // };
-
-
-  // function to convert buffer to blob
   function audioBufferToWav(buffer: any) {
     const numOfChan = buffer.numberOfChannels;
     const length = buffer.length * numOfChan * 2 + 44;
@@ -172,10 +178,8 @@ const AudioWaveform: React.FC = () => {
 
     while (pos < length) {
       for (i = 0; i < numOfChan; i++) {
-
         sample = Math.max(-1, Math.min(1, channels[i][offset]));
-        sample =
-          sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
         view.setInt16(pos, sample, true);
         pos += 2;
       }
@@ -195,7 +199,6 @@ const AudioWaveform: React.FC = () => {
     }
   }
 
-
   const handleTrim = async () => {
     if (regionsPlugin && wavesurferObj) {
       const regionsList = regionsPlugin.regions;
@@ -212,16 +215,19 @@ const AudioWaveform: React.FC = () => {
           const waveKeys = Object.keys(wavesurferObj);
           const originalBuffer = wavesurferObj[waveKeys[4]];
 
-          console.log(originalBuffer)
+          console.log(originalBuffer);
 
           if (originalBuffer) {
-            // Trim the buffer
             const startSample = Math.floor(start * originalBuffer.sampleRate);
             const endSample = Math.ceil(end * originalBuffer.sampleRate);
 
             console.log(`Region start time: ${start}, end time: ${end}`);
 
-            const trimmedBuffer = new AudioContext().createBuffer(originalBuffer.numberOfChannels, endSample - startSample, originalBuffer.sampleRate)
+            const trimmedBuffer = new AudioContext().createBuffer(
+              originalBuffer.numberOfChannels,
+              endSample - startSample,
+              originalBuffer.sampleRate
+            );
 
             for (let i = 0; i < originalBuffer.numberOfChannels; i++) {
               trimmedBuffer.copyToChannel(
@@ -230,17 +236,14 @@ const AudioWaveform: React.FC = () => {
               );
             }
 
-            // Convert trimmed buffer to a Blob
             const trimmedBlob = audioBufferToWav(trimmedBuffer);
-
-            // Load the Blob into WaveSurfer
             wavesurferObj.loadBlob(trimmedBlob);
 
             firstRegion.remove();
           }
         }
       } else {
-        console.warn('No regions found to trim.');
+        console.warn("No regions found to trim.");
       }
     }
   };
@@ -253,19 +256,16 @@ const AudioWaveform: React.FC = () => {
 
       console.log("FIRST REGION: ", firstRegion);
 
-
-
       const waveKeys = Object.keys(wavesurferObj);
       const originalBuffer = wavesurferObj[waveKeys[4]];
-
 
       if (originalBuffer) {
         const wavBlob = audioBufferToWav(originalBuffer);
         const url = URL.createObjectURL(wavBlob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
+        const a = document.createElement("a");
+        a.style.display = "none";
         a.href = url;
-        a.download = 'current-audio.wav';
+        a.download = "current-audio.wav";
         document.body.appendChild(a);
         a.click();
         URL.revokeObjectURL(url);
@@ -275,67 +275,56 @@ const AudioWaveform: React.FC = () => {
 
   return (
     <section>
-      <div ref={wavesurferRef} id='waveform' />
-      <div ref={timelineRef} id='wave-timeline' />
+      <style jsx>{`
+        #wave-timeline .wavesurfer-timeline-label {
+          color: #00ff8e;
+        }
+      `}</style>
+      <div ref={wavesurferRef} id="waveform" style={{ marginBottom: "10px" }} />
+      <div
+        ref={timelineRef}
+        id="wave-timeline"
+        style={{ marginBottom: "20px" }}
+      />
 
-      <div className='flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mt-10'>
-        <div className='lg:mr-2 flex gap-2 justify-center'>
-          {/* <ToggleButton /> */}
-          <Button title='play/pause' className='controls' onClick={handlePlayPause}>
-            {playing ? (
-              <FaPause />
-            ) : (
-              <FaPlay />
-            )}
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mt-10">
+        <div className="lg:mr-2 flex gap-2 justify-center">
+          <Button
+            title="play/pause"
+            className="controls"
+            onClick={handlePlayPause}
+          >
+            {playing ? <FaPause /> : <FaPlay />}
           </Button>
-          <Button title='reload' className='controls' onClick={handleReload}>
+          <Button title="reload" className="controls" onClick={handleReload}>
             <MdOutlineReplay />
           </Button>
-          <Button className='trim' onClick={handleTrim}>
+          <Button className="trim" onClick={handleTrim}>
             <FaCut />
             <span className="ml-1">Trim</span>
           </Button>
-          <Button className='download' onClick={handleDownload}>
+          <Button className="download" onClick={handleDownload}>
             <span>Download</span>
           </Button>
         </div>
 
-        <div className='flex items-center justify-center gap-2 mt-2 lg:mt-0'>
-          {/* <span className="text-sm text-gray-500">Zoom</span>
-          <div className='flex items-center space-x-1 w-1/2'>
-            <AiOutlineMinusCircle />
-            <Slider
-              min={1}
-              max={1000}
-              value={[zoom]}
-              onValueChange={handleZoomSlider}
-              className='w-full lg:w-32'
-            />
-            <AiOutlinePlusCircle />
-          </div> */}
+        <div className="flex items-center justify-center gap-2 mt-2 lg:mt-0">
           <span className="text-sm text-gray-500">Volume</span>
-          <div className='flex items-center space-x-1 w-1/2'>
-            {volume > 0 ? (
-              <FaVolumeUp />
-            ) : (
-              <FaVolumeDown />
-            )}
+          <div className="flex items-center space-x-1 w-1/2">
+            {volume > 0 ? <FaVolumeUp /> : <FaVolumeDown />}
             <Slider
               min={0}
               max={1}
               step={0.05}
               value={[volume]}
               onValueChange={handleVolumeSlider}
-              className='w-full lg:w-32'
+              className="w-full lg:w-32"
             />
           </div>
         </div>
       </div>
-
-
     </section>
   );
 };
 
 export default AudioWaveform;
-
